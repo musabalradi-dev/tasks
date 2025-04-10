@@ -5,8 +5,6 @@ class TasksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Text('data'),
-    );
+    return Center(child: Text('Tasks Screen'));
   }
 }
