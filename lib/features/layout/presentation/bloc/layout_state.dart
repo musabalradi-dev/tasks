@@ -18,13 +18,25 @@ final class InsertDatabaseErrorState extends LayoutState {
   InsertDatabaseErrorState({required this.error});
 }
 
-final class UpdateDataBaseState extends LayoutState {}
-
-final class DeleteDataBaseState extends LayoutState {}
-
-final class GetDataBaseState extends LayoutState {}
-
-final class LayoutErrorState extends LayoutState {
+final class GetDatabaseSuccessState extends LayoutState {}
+final class GetDatabaseErrorState extends LayoutState {
   final String error;
-  LayoutErrorState(this.error);
+  GetDatabaseErrorState({required this.error});
+}
+
+final class UpdateDatabaseSuccessState extends LayoutState {}
+final class UpdateDatabaseErrorState extends LayoutState {
+  final String error;
+  UpdateDatabaseErrorState({required this.error});
+}
+
+final class DeleteDatabaseSuccessState extends LayoutState {}
+final class DeleteDatabaseErrorState extends LayoutState {
+  final String error;
+  DeleteDatabaseErrorState({required this.error});
+}
+
+final class ChangeBottomSheetState extends LayoutState {
+  final bool isShow;
+  ChangeBottomSheetState({required this.isShow});
 }

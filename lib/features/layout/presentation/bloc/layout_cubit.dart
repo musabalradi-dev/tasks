@@ -13,6 +13,8 @@ class LayoutCubit extends Cubit<LayoutState> {
   static LayoutCubit get(context) => BlocProvider.of(context);
 
   // Variable
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
   // Database constants
   static const String _databaseName = 'task.db';
   static const int _databaseVersion = 1;
@@ -25,6 +27,7 @@ class LayoutCubit extends Cubit<LayoutState> {
 
   // Navigation variables
   int _selectedIndex = 0;
+
   int get selectedIndex => _selectedIndex;
 
   final List<Widget> _screens = const [
@@ -39,11 +42,13 @@ class LayoutCubit extends Cubit<LayoutState> {
     'Archived Tasks',
   ];
 
-
   // Database instance
   Database? _database;
+
   Database? get database => _database;
+
   List<String> get titles => _screenTitles;
+
   List<Widget> get screens => _screens;
 
   // Change current screen
@@ -56,8 +61,7 @@ class LayoutCubit extends Cubit<LayoutState> {
     }
   }
 
-
-// Initialize database
+  // Initialize database
   Future<void> createDatabase() async {
     try {
       _database = await openDatabase(
@@ -69,7 +73,11 @@ class LayoutCubit extends Cubit<LayoutState> {
       emit(CreateDatabaseSuccessState());
     } catch (e) {
       LoggerHelper.error('Failed to create database: ${e.toString()}');
-      emit(CreateDatabaseErrorState(error: 'Failed to create database: ${e.toString()}'));
+      emit(
+        CreateDatabaseErrorState(
+          error: 'Failed to create database: ${e.toString()}',
+        ),
+      );
     }
   }
 
@@ -103,16 +111,18 @@ class LayoutCubit extends Cubit<LayoutState> {
       LoggerHelper.warning('Database not initialized');
       return;
     }
-
     try {
-      final id = await _database!.rawInsert('''
+      final id = await _database!.rawInsert(
+        '''
         INSERT INTO $_tableName(
           $_columnTitle, 
           $_columnDate, 
           $_columnTime, 
           $_columnStatus
         ) VALUES (?, ?, ?, ?)
-      ''', [title, date, time, status]);
+      ''',
+        [title, date, time, status],
+      );
 
       LoggerHelper.debug('Inserted record with id: $id');
       emit(InsertDatabaseSuccessState());
@@ -120,5 +130,81 @@ class LayoutCubit extends Cubit<LayoutState> {
       LoggerHelper.error('Failed to insert record: ${e.toString()}');
       emit(InsertDatabaseErrorState(error: e.toString()));
     }
+  }
+
+  // Get data from database
+  Future<List<Map<String, dynamic>>> getDataFromDatabase() async {
+    if (_database == null) {
+      LoggerHelper.warning('Database not initialized');
+      return [];
+    }
+    try {
+      final result = await _database!.query(_tableName);
+      print(result);
+      return result;
+    } catch (e) {
+      LoggerHelper.error('Failed to get data from database: ${e.toString()}');
+      return [];
+    }
+  }
+
+  // Update data in database
+  Future<void> updateDatabase(Map<String, dynamic> data) async {
+    if (_database == null) {
+      LoggerHelper.warning('Database not initialized');
+      return;
+    }
+    try {
+      await _database!.update(
+        _tableName,
+        data,
+        where: '$_columnId = ?',
+        whereArgs: [data[_columnId]],
+      );
+      LoggerHelper.debug('Record updated successfully');
+    } catch (e) {
+      LoggerHelper.error('Failed to update record: ${e.toString()}');
+    }
+  }
+
+  // Delete data from database
+  Future<void> deleteFromDatabase(int id) async {
+    if (_database == null) {
+      LoggerHelper.warning('Database not initialized');
+      return;
+    }
+    try {
+      await _database!.delete(
+        _tableName,
+        where: '$_columnId = ?',
+        whereArgs: [id],
+      );
+      LoggerHelper.debug('Record deleted successfully');
+    } catch (e) {
+      LoggerHelper.error('Failed to delete record: ${e.toString()}');
+    }
+  }
+
+  // Change bottom sheet state
+  bool _isBottomSheetShown = false;
+  bool get isBottomSheetShown => _isBottomSheetShown;
+  void changeBottomSheetState({required bool isShow}) {
+    _isBottomSheetShown = isShow;
+    emit(ChangeBottomSheetState(isShow: isShow));
+  }
+
+  // Close database
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  // Dispose method
+  @override
+  Future<void> close() async {
+    await closeDatabase();
+    return super.close();
   }
 }

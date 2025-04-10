@@ -12,11 +12,18 @@ class LayoutScreen extends StatelessWidget {
     LayoutCubit cubit = LayoutCubit.get(context);
     return BlocBuilder<LayoutCubit, LayoutState>(
         builder: (context, state) => Scaffold(
+          key: cubit.scaffoldKey,
           appBar: AppBar(
             title: Text(cubit.titles[cubit.selectedIndex]),
           ),
           body: cubit.screens[cubit.selectedIndex],
           bottomNavigationBar: BottomNavigationBarMenu(),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              cubit.getDataFromDatabase();
+            },
+            child: const Icon(Icons.add),
+          ),
         ),
     );
   }
