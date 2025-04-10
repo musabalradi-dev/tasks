@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:tasks/core/utils/logging/logger.dart';
 import 'package:tasks/features/archived/presentation/screen/archived.dart';
 import 'package:tasks/features/done/presentation/screen/done.dart';
 import 'package:tasks/features/layout/presentation/bloc/layout_state.dart';
@@ -13,57 +13,112 @@ class LayoutCubit extends Cubit<LayoutState> {
   static LayoutCubit get(context) => BlocProvider.of(context);
 
   // Variable
-  int selectedIndex = 0;
-  Database? database;
-  Logger logger = Logger();
-  List<Widget> screen = [TasksScreen(), DoneScreen(), ArchivedScreen()];
+  // Database constants
+  static const String _databaseName = 'task.db';
+  static const int _databaseVersion = 1;
+  static const String _tableName = 'tasks';
+  static const String _columnId = 'id';
+  static const String _columnTitle = 'title';
+  static const String _columnDate = 'date';
+  static const String _columnTime = 'time';
+  static const String _columnStatus = 'status';
 
-  List<String> title = ['New Tasks', 'Done Tasks', 'Archived Tasks'];
+  // Navigation variables
+  int _selectedIndex = 0;
+  int get selectedIndex => _selectedIndex;
 
+  final List<Widget> _screens = const [
+    TasksScreen(),
+    DoneScreen(),
+    ArchivedScreen(),
+  ];
+
+  final List<String> _screenTitles = const [
+    'New Tasks',
+    'Done Tasks',
+    'Archived Tasks',
+  ];
+
+
+  // Database instance
+  Database? _database;
+  Database? get database => _database;
+  List<String> get titles => _screenTitles;
+  List<Widget> get screens => _screens;
+
+  // Change current screen
   void changeScreen(int index) {
-    selectedIndex = index;
-    emit(NavigationMenuState());
+    if (index >= 0 && index < screens.length) {
+      _selectedIndex = index;
+      emit(BottomNavigationBarState());
+    } else {
+      LoggerHelper.warning('Invalid screen index: $index');
+    }
   }
 
-  void createDataBase() {
-    openDatabase(
-      'task.db',
-      version: 2,
-      onCreate: (database, version) {
-        print('DataBase Created');
-        database.execute(
-          'CREATE TABLE tasks (id INTEGER PRIMARY KEY, title text, date text, time text, status text)',
-        );
-        print('Table Created');
-      },
-      onOpen: (database) {
-        print('DataBase Opened');
-      },
-    )
-        .then((value) {
-      database = value;
-      emit(CreateDataBaseState());
-    })
-        .catchError((error) {
-      logger.e('error.toString()');
-    });
+
+// Initialize database
+  Future<void> createDatabase() async {
+    try {
+      _database = await openDatabase(
+        _databaseName,
+        version: _databaseVersion,
+        onCreate: _onCreate,
+        onOpen: (db) => LoggerHelper.debug('Database opened'),
+      );
+      emit(CreateDatabaseSuccessState());
+    } catch (e) {
+      LoggerHelper.error('Failed to create database: ${e.toString()}');
+      emit(CreateDatabaseErrorState(error: 'Failed to create database: ${e.toString()}'));
+    }
   }
 
-  void insertToDatabase() {
+  // Database creation callback
+  Future<void> _onCreate(Database db, int version) async {
+    try {
+      await db.execute('''
+        CREATE TABLE $_tableName (
+          $_columnId INTEGER PRIMARY KEY,
+          $_columnTitle TEXT,
+          $_columnDate TEXT,
+          $_columnTime TEXT,
+          $_columnStatus TEXT
+        )
+      ''');
+      LoggerHelper.debug('Database and table created successfully');
+    } catch (e) {
+      LoggerHelper.error('Failed to create table: ${e.toString()}');
+      rethrow;
+    }
+  }
 
-    database?.transaction((txn) async {
-      await txn.rawInsert('INSERT INFO tasks(title, date, time, status) VALUES ("Musab", "dd","dd", "true")').then((value){
-        print('$value dfdggdgtgd');
-        print('lll');
-        emit(InsertDataBaseState());
-      }).catchError((error){
-        print('object');
-      });
-      return null;
-    }).then((value) {
-      print('value');
-    }).catchError((error) {
-      logger.e(error.toString());
-    });
+  // Insert data into database
+  Future<void> insertToDatabase({
+    required String title,
+    required String date,
+    required String time,
+    required String status,
+  }) async {
+    if (_database == null) {
+      LoggerHelper.warning('Database not initialized');
+      return;
+    }
+
+    try {
+      final id = await _database!.rawInsert('''
+        INSERT INTO $_tableName(
+          $_columnTitle, 
+          $_columnDate, 
+          $_columnTime, 
+          $_columnStatus
+        ) VALUES (?, ?, ?, ?)
+      ''', [title, date, time, status]);
+
+      LoggerHelper.debug('Inserted record with id: $id');
+      emit(InsertDatabaseSuccessState());
+    } catch (e) {
+      LoggerHelper.error('Failed to insert record: ${e.toString()}');
+      emit(InsertDatabaseErrorState(error: e.toString()));
+    }
   }
 }

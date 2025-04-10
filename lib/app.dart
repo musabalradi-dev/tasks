@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeApp.lightTheme,
       darkTheme: ThemeApp.darkTheme,
       home: BlocProvider(
-          create: (context) => LayoutCubit()..createDataBase(),
+          create: (context) => LayoutCubit()..createDatabase(),
           child: const LayoutScreen()),
       locale: Locale('en', 'US'),
     );

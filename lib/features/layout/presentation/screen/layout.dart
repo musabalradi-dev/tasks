@@ -3,6 +3,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tasks/features/layout/presentation/bloc/layout_cubit.dart';
 import 'package:tasks/features/layout/presentation/bloc/layout_state.dart';
+import 'package:tasks/features/layout/presentation/widget/bottom_navigation_bar_menu.dart';
 
 class LayoutScreen extends StatelessWidget {
   const LayoutScreen({super.key});
@@ -13,20 +14,10 @@ class LayoutScreen extends StatelessWidget {
     return BlocBuilder<LayoutCubit, LayoutState>(
         builder: (context, state) => Scaffold(
           appBar: AppBar(
-            title: Text(cubit.title[cubit.selectedIndex]),
+            title: Text(cubit.titles[cubit.selectedIndex]),
           ),
-          body: cubit.screen[cubit.selectedIndex],
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: cubit.selectedIndex,
-            onDestinationSelected: (index) {
-              cubit.changeScreen(index);
-            },
-            destinations: const [
-              NavigationDestination(icon: Icon(Iconsax.task), label: 'Tasks'),
-              NavigationDestination(icon: Icon(Iconsax.chart_success), label: 'Done'),
-              NavigationDestination(icon: Icon(Iconsax.archive), label: 'Archived'),
-            ],
-          ),
+          body: cubit.screens[cubit.selectedIndex],
+          bottomNavigationBar: BottomNavigationBarMenu(),
         ),
     );
   }
